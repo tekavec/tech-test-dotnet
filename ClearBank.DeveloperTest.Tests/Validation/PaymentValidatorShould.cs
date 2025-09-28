@@ -8,12 +8,11 @@ namespace ClearBank.DeveloperTest.Tests.Validation
     {
         private readonly MakePaymentResult SuccessfulResult = new MakePaymentResult { Success = true };
         private readonly MakePaymentResult UnsuccessfulResult = new MakePaymentResult { Success = false };
-        private readonly Account SomeAccount = new Account();
+        private readonly PaymentContext SomePaymentContext = new PaymentContext(new Account(), new MakePaymentRequest());
 
         [Fact]
         public void Allow_Payment_When_First_Inner_Validator_Allows_Payment()
         {
-            var paymentContext = new PaymentContext { Account = SomeAccount };
             var validatorOne = CreateValidatorWithExpectedResult(UnsuccessfulResult);
             var validatorTwo = CreateValidatorWithExpectedResult(SuccessfulResult);
             var validatorThree = CreateValidatorWithExpectedResult(SuccessfulResult);
@@ -21,7 +20,7 @@ namespace ClearBank.DeveloperTest.Tests.Validation
                 new List<IPaymentValidator> 
                     { validatorOne.Object, validatorTwo.Object, validatorThree.Object });
 
-            var result = paymentValidator.IsPaymentAllowed(paymentContext);
+            var result = paymentValidator.IsPaymentAllowed(SomePaymentContext);
 
             Assert.True(result.Success);
             validatorOne.Verify(a => a.IsPaymentAllowed(It.IsAny<PaymentContext>()), Times.Once);
@@ -32,7 +31,6 @@ namespace ClearBank.DeveloperTest.Tests.Validation
         [Fact]
         public void Not_Allow_Payment_When_No_Inner_Validator_Allows_Payment()
         {
-            var paymentContext = new PaymentContext { Account = SomeAccount };
             var validatorOne = CreateValidatorWithExpectedResult(UnsuccessfulResult);
             var validatorTwo = CreateValidatorWithExpectedResult(UnsuccessfulResult);
             var validatorThree = CreateValidatorWithExpectedResult(UnsuccessfulResult);
@@ -40,7 +38,7 @@ namespace ClearBank.DeveloperTest.Tests.Validation
                 new List<IPaymentValidator>
                     { validatorOne.Object, validatorTwo.Object, validatorThree.Object });
 
-            MakePaymentResult result = paymentValidator.IsPaymentAllowed(paymentContext);
+            MakePaymentResult result = paymentValidator.IsPaymentAllowed(SomePaymentContext);
 
             Assert.False(result.Success);
             validatorOne.Verify(a => a.IsPaymentAllowed(It.IsAny<PaymentContext>()), Times.Once);

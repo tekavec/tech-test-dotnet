@@ -1,7 +1,9 @@
 ﻿using ClearBank.DeveloperTest.Data;
 using ClearBank.DeveloperTest.Types;
+using ClearBank.DeveloperTest.Validation;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 
 namespace ClearBank.DeveloperTest.Services
@@ -9,6 +11,7 @@ namespace ClearBank.DeveloperTest.Services
     public class PaymentService : IPaymentService
     {
         private readonly IAccountDataStoreFactory accountDataStoreFactory;
+        private readonly IPaymentValidator paymentValidator;
         private readonly string dataStoreType;
 
         [Obsolete]
@@ -16,14 +19,23 @@ namespace ClearBank.DeveloperTest.Services
         {
             this.accountDataStoreFactory = new AccountDataStoreFactory();
             this.dataStoreType = ConfigurationManager.AppSettings["DataStoreType"];
+            this.paymentValidator = new PaymentValidator(
+                new List<IPaymentValidator>
+                {
+                    new BacsPaymentValidator(),
+                    new FasterPaymentsPaymentValidator(),
+                    new ChapsPaymentValidator()
+                });
         }
 
         public PaymentService(
             IAccountDataStoreFactory accountDataStoreFactory,
-            IOptions<DataStoreOptions> dataStoreOptions)
+            IOptions<DataStoreOptions> dataStoreOptions,
+            IPaymentValidator paymentValidator)
         {
             this.accountDataStoreFactory = accountDataStoreFactory;
             this.dataStoreType = dataStoreOptions.Value.DataStoreType;
+            this.paymentValidator = paymentValidator;
         }
 
         public MakePaymentResult MakePayment(MakePaymentRequest request)
@@ -35,53 +47,7 @@ namespace ClearBank.DeveloperTest.Services
             var accountDataStore = this.accountDataStoreFactory.CreateDataStore(dataStoreType);
             account = accountDataStore.GetAccount(request.DebtorAccountNumber);
 
-            var result = new MakePaymentResult();
-
-            result.Success = true;
-
-            switch (request.PaymentScheme)
-            {
-                case PaymentScheme.Bacs:
-                    if (account == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!account.AllowedPaymentSchemes.HasFlag(AllowedPaymentSchemes.Bacs))
-                    {
-                        result.Success = false;
-                    }
-                    break;
-
-                case PaymentScheme.FasterPayments:
-                    if (account == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!account.AllowedPaymentSchemes.HasFlag(AllowedPaymentSchemes.FasterPayments))
-                    {
-                        result.Success = false;
-                    }
-                    else if (account.Balance < request.Amount)
-                    {
-                        result.Success = false;
-                    }
-                    break;
-
-                case PaymentScheme.Chaps:
-                    if (account == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!account.AllowedPaymentSchemes.HasFlag(AllowedPaymentSchemes.Chaps))
-                    {
-                        result.Success = false;
-                    }
-                    else if (account.Status != AccountStatus.Live)
-                    {
-                        result.Success = false;
-                    }
-                    break;
-            }
+            var result = this.paymentValidator.IsPaymentAllowed(new PaymentContext (account, request));
 
             if (result.Success)
             {

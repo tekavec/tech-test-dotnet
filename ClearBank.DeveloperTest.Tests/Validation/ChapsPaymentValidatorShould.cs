@@ -97,10 +97,6 @@ namespace ClearBank.DeveloperTest.Tests.Validation
             new MakePaymentRequest { PaymentScheme = paymentScheme };
 
         private static PaymentContext GetChapsPaymentContext(PaymentScheme paymentScheme, Account account) =>
-            new PaymentContext
-            {
-                Account = account,
-                MakePaymentRequest = GetMakePaymentRequest(paymentScheme)
-            };
+            new PaymentContext(account, GetMakePaymentRequest(paymentScheme));
     }
 }

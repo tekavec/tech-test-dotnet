@@ -1,6 +1,7 @@
 ﻿using ClearBank.DeveloperTest.Data;
 using ClearBank.DeveloperTest.Services;
 using ClearBank.DeveloperTest.Types;
+using ClearBank.DeveloperTest.Validation;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -215,7 +216,16 @@ namespace ClearBank.DeveloperTest.Tests.Services
             var accountDataStoreFactory = new Mock<IAccountDataStoreFactory>();
             accountDataStoreFactory.Setup(a => a.CreateDataStore(dataStoreType)).Returns(accountDataStore.Object);
 
-            return new PaymentService(accountDataStoreFactory.Object, GetDataStoreOptions(dataStoreType));
+            return new PaymentService(
+                accountDataStoreFactory.Object, 
+                GetDataStoreOptions(dataStoreType), 
+                new PaymentValidator(
+                    new List<IPaymentValidator>
+                    {
+                        new BacsPaymentValidator(),
+                        new FasterPaymentsPaymentValidator(),
+                        new ChapsPaymentValidator()
+                    }));
         }
 
         private static Account GetAccount(

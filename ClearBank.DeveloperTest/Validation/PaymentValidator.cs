@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ClearBank.DeveloperTest.Validation
 {
-    public class PaymentValidator
+    public class PaymentValidator : IPaymentValidator
     {
         private IList<IPaymentValidator> innerValidators;
 

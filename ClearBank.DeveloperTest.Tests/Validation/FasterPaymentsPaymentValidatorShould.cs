@@ -95,10 +95,6 @@ namespace ClearBank.DeveloperTest.Tests.Validation
             new MakePaymentRequest { PaymentScheme = paymentScheme, Amount = amount };
 
         private static PaymentContext GetFasterPaymentsPaymentContext(PaymentScheme paymentScheme, Account account, decimal amount) =>
-            new PaymentContext
-            {
-                Account = account,
-                MakePaymentRequest = GetMakePaymentRequest(paymentScheme, amount)
-            };
+            new PaymentContext(account, GetMakePaymentRequest(paymentScheme, amount));
     }
 }

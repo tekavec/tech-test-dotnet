@@ -8,6 +8,8 @@ namespace ClearBank.DeveloperTest.Tests.Services
     {
         private const string BackupDataStoreType = "Backup";
         private const string NormalDataStoreType = "data-store";
+        private const string SomeAccountNumber = "12345678";
+        private readonly Account NonExistentAccount = null;
 
         [Theory]
         [InlineData(PaymentScheme.Bacs, 1)]
@@ -17,12 +19,8 @@ namespace ClearBank.DeveloperTest.Tests.Services
             PaymentScheme paymentScheme,
             decimal amount)
         {
-            var makePaymentRequest = new MakePaymentRequest { DebtorAccountNumber = "12345678", PaymentScheme = paymentScheme, Amount = amount };
-            var paymentService = new TestablePaymentService 
-            { 
-                DataStoreType = BackupDataStoreType, 
-                BackupAccountDataStore = new TestableBackupAccountDataStore { Account = null} 
-            };
+            var makePaymentRequest = GetMakePaymentRequest(amount, paymentScheme);
+            var paymentService = GetPaymentService(NormalDataStoreType, NonExistentAccount);
 
             var result = paymentService.MakePayment(makePaymentRequest);
 
@@ -37,12 +35,8 @@ namespace ClearBank.DeveloperTest.Tests.Services
             PaymentScheme paymentScheme,
             decimal amount)
         {
-            var makePaymentRequest = new MakePaymentRequest { DebtorAccountNumber = "12345678", PaymentScheme = paymentScheme, Amount = amount };
-            var paymentService = new TestablePaymentService
-            {
-                DataStoreType = NormalDataStoreType,
-                AccountDataStore = new TestableAccountDataStore { Account = null }
-            };
+            var makePaymentRequest = GetMakePaymentRequest(amount, paymentScheme);
+            var paymentService = GetPaymentService(NormalDataStoreType, NonExistentAccount);
 
             var result = paymentService.MakePayment(makePaymentRequest);
 
@@ -64,14 +58,9 @@ namespace ClearBank.DeveloperTest.Tests.Services
             decimal amount,
             decimal accountBalance)
         {
-            Account account = GetAccount(AllowedPaymentSchemes.Bacs, accountBalance, status);
-            var makePaymentRequest = new MakePaymentRequest { PaymentScheme = PaymentScheme.Bacs, Amount = amount };
-            var paymentService = new TestablePaymentService
-            {
-                DataStoreType = dataStoreType,
-                BackupAccountDataStore = new TestableBackupAccountDataStore { Account = account },
-                AccountDataStore = new TestableAccountDataStore { Account = account }
-            };
+            var account = GetAccount(AllowedPaymentSchemes.Bacs, accountBalance, status);
+            var makePaymentRequest = GetMakePaymentRequest(amount, PaymentScheme.Bacs);
+            var paymentService = GetPaymentService(dataStoreType, account);
 
             var result = paymentService.MakePayment(makePaymentRequest);
 
@@ -94,14 +83,9 @@ namespace ClearBank.DeveloperTest.Tests.Services
             decimal amount,
             decimal accountBalance)
         {
-            Account account = GetAccount(AllowedPaymentSchemes.FasterPayments, accountBalance, status);
-            var makePaymentRequest = new MakePaymentRequest { PaymentScheme = PaymentScheme.FasterPayments, Amount = amount };
-            var paymentService = new TestablePaymentService
-            {
-                DataStoreType = dataStoreType,
-                BackupAccountDataStore = new TestableBackupAccountDataStore { Account = account },
-                AccountDataStore = new TestableAccountDataStore { Account = account }
-            };
+            var account = GetAccount(AllowedPaymentSchemes.FasterPayments, accountBalance, status);
+            var makePaymentRequest = GetMakePaymentRequest(amount, PaymentScheme.FasterPayments);
+            var paymentService = GetPaymentService(dataStoreType, account);
 
             var result = paymentService.MakePayment(makePaymentRequest);
 
@@ -120,14 +104,9 @@ namespace ClearBank.DeveloperTest.Tests.Services
             decimal amount,
             decimal accountBalance)
         {
-            Account account = GetAccount(AllowedPaymentSchemes.FasterPayments, accountBalance, status);
-            var makePaymentRequest = new MakePaymentRequest { PaymentScheme = PaymentScheme.FasterPayments, Amount = amount };
-            var paymentService = new TestablePaymentService
-            {
-                DataStoreType = dataStoreType,
-                BackupAccountDataStore = new TestableBackupAccountDataStore { Account = account },
-                AccountDataStore = new TestableAccountDataStore { Account = account }
-            };
+            var account = GetAccount(AllowedPaymentSchemes.FasterPayments, accountBalance, status);
+            var makePaymentRequest = GetMakePaymentRequest(amount, PaymentScheme.FasterPayments);
+            var paymentService = GetPaymentService(dataStoreType, account);
 
             var result = paymentService.MakePayment(makePaymentRequest);
 
@@ -135,11 +114,27 @@ namespace ClearBank.DeveloperTest.Tests.Services
             Assert.True(account.Balance == accountBalance);
         }
 
+        private static TestablePaymentService GetPaymentService(string dataStoreType, Account account) => 
+            new TestablePaymentService
+            {
+                DataStoreType = dataStoreType,
+                BackupAccountDataStore = new TestableBackupAccountDataStore { Account = account },
+                AccountDataStore = new TestableAccountDataStore { Account = account }
+            };
+
         private static Account GetAccount(
             AllowedPaymentSchemes allowedPaymentSchemes,
             decimal accountBalance,
             AccountStatus status) =>
                 new Account { AllowedPaymentSchemes = allowedPaymentSchemes, Balance = accountBalance, Status = status };
+
+        private static MakePaymentRequest GetMakePaymentRequest(decimal amount, PaymentScheme paymentScheme) => 
+            new MakePaymentRequest
+            {
+                DebtorAccountNumber = SomeAccountNumber,
+                PaymentScheme = paymentScheme,
+                Amount = amount
+            };
     }
 
     public class TestablePaymentService : PaymentService

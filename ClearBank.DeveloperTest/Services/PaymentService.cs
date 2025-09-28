@@ -1,27 +1,33 @@
 ﻿using ClearBank.DeveloperTest.Data;
 using ClearBank.DeveloperTest.Types;
+using System;
 using System.Configuration;
 
 namespace ClearBank.DeveloperTest.Services
 {
     public class PaymentService : IPaymentService
     {
+        private readonly IAccountDataStoreFactory accountDataStoreFactory;
+
+        [Obsolete]
+        public PaymentService()
+        {
+            this.accountDataStoreFactory = new AccountDataStoreFactory();
+        }
+
+        public PaymentService(IAccountDataStoreFactory accountDataStoreFactory)
+        {
+            this.accountDataStoreFactory = accountDataStoreFactory;
+        }
+
         public MakePaymentResult MakePayment(MakePaymentRequest request)
         {
             var dataStoreType = GetDataStoreType();
 
             Account account = null;
 
-            if (dataStoreType == "Backup")
-            {
-                var accountDataStore = GetBackupAccountDataStore();
-                account = accountDataStore.GetAccount(request.DebtorAccountNumber);
-            }
-            else
-            {
-                var accountDataStore = GetAccountDataStore();
-                account = accountDataStore.GetAccount(request.DebtorAccountNumber);
-            }
+            var accountDataStore = this.accountDataStoreFactory.CreateDataStore(dataStoreType);
+            account = accountDataStore.GetAccount(request.DebtorAccountNumber);
 
             var result = new MakePaymentResult();
 
@@ -75,29 +81,10 @@ namespace ClearBank.DeveloperTest.Services
             {
                 account.Balance -= request.Amount;
 
-                if (dataStoreType == "Backup")
-                {
-                    var accountDataStore = new BackupAccountDataStore();
-                    accountDataStore.UpdateAccount(account);
-                }
-                else
-                {
-                    var accountDataStore = new AccountDataStore();
-                    accountDataStore.UpdateAccount(account);
-                }
+                accountDataStore.UpdateAccount(account);
             }
 
             return result;
-        }
-
-        public virtual AccountDataStore GetAccountDataStore()
-        {
-            return new AccountDataStore();
-        }
-
-        public virtual BackupAccountDataStore GetBackupAccountDataStore()
-        {
-            return new BackupAccountDataStore();
         }
 
         public virtual string GetDataStoreType()

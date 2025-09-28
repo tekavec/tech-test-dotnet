@@ -4,7 +4,7 @@ namespace ClearBank.DeveloperTest.Data
 {
     public class BackupAccountDataStore : IAccountDataStore
     {
-        public virtual Account GetAccount(string accountNumber)
+        public Account GetAccount(string accountNumber)
         {
             // Access backup data base to retrieve account, code removed for brevity 
             return new Account();

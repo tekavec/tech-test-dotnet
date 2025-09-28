@@ -1,6 +1,7 @@
 ﻿using ClearBank.DeveloperTest.Data;
 using ClearBank.DeveloperTest.Services;
 using ClearBank.DeveloperTest.Types;
+using Moq;
 
 namespace ClearBank.DeveloperTest.Tests.Services
 {
@@ -205,13 +206,19 @@ namespace ClearBank.DeveloperTest.Tests.Services
             Assert.True(account.Balance == accountBalance - amount);
         }
 
-        private static TestablePaymentService GetPaymentService(string dataStoreType, Account account) => 
-            new TestablePaymentService
+        private static TestablePaymentService GetPaymentService(string dataStoreType, Account account)
+        {
+            var accountDataStore = new Mock<IAccountDataStore>();
+            accountDataStore.Setup(a => a.GetAccount(SomeAccountNumber)).Returns(account);
+
+            var accountDataStoreFactory = new Mock<IAccountDataStoreFactory>();
+            accountDataStoreFactory.Setup(a => a.CreateDataStore(dataStoreType)).Returns(accountDataStore.Object);
+
+            return new TestablePaymentService(accountDataStoreFactory.Object)
             {
-                DataStoreType = dataStoreType,
-                BackupAccountDataStore = new TestableBackupAccountDataStore { Account = account },
-                AccountDataStore = new TestableAccountDataStore { Account = account }
+                DataStoreType = dataStoreType
             };
+        }
 
         private static Account GetAccount(
             AllowedPaymentSchemes allowedPaymentSchemes,
@@ -230,43 +237,15 @@ namespace ClearBank.DeveloperTest.Tests.Services
 
     public class TestablePaymentService : PaymentService
     {
+        public TestablePaymentService(IAccountDataStoreFactory accountDataStoreFactory) : base(accountDataStoreFactory)
+        {
+        }
+
         public string DataStoreType { get; set; }
-        public AccountDataStore AccountDataStore { get; set; }
-        public BackupAccountDataStore BackupAccountDataStore { get; set; }
-
-        public override AccountDataStore GetAccountDataStore()
-        {
-            return this.AccountDataStore;
-        }
-
-        public override BackupAccountDataStore GetBackupAccountDataStore()
-        {
-            return this.BackupAccountDataStore;
-        }
 
         public override string GetDataStoreType()
         {
             return this.DataStoreType;
-        }
-    }
-
-    public class TestableAccountDataStore : AccountDataStore
-    {
-        public Account Account { get; set; }
-
-        public override Account GetAccount(string accountNumber)
-        {
-            return this.Account;
-        }
-    }
-
-    public class TestableBackupAccountDataStore : BackupAccountDataStore
-    {
-        public Account Account { get; set; }
-
-        public override Account GetAccount(string accountNumber)
-        {
-            return this.Account;
         }
     }
 }

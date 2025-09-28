@@ -14,13 +14,13 @@ namespace ClearBank.DeveloperTest.Tests.Validation
         [InlineData(PaymentScheme.Chaps)]
         public void Not_Allow_Payment_If_Payment_Scheme_Is_Not_FasterPayments(PaymentScheme paymentScheme)
         {
-            var bacsPaymentValidator = new FasterPaymentsPaymentValidator();
+            var fasterPaymentsPaymentValidator = new FasterPaymentsPaymentValidator();
             var paymentContext = GetFasterPaymentsPaymentContext(
                 paymentScheme, 
                 GetAccount(AllowedPaymentSchemes.FasterPayments, LargeAmount), 
                 SmallAmount);
 
-            MakePaymentResult result = bacsPaymentValidator.IsPaymentAllowed(paymentContext);
+            MakePaymentResult result = fasterPaymentsPaymentValidator.IsPaymentAllowed(paymentContext);
 
             Assert.False(result.Success);
         }
@@ -28,13 +28,13 @@ namespace ClearBank.DeveloperTest.Tests.Validation
         [Fact]
         public void Not_Allow_Payment_If_No_Account_Provided()
         {
-            var bacsPaymentValidator = new FasterPaymentsPaymentValidator();
+            var fasterPaymentsPaymentValidator = new FasterPaymentsPaymentValidator();
             var paymentContext = GetFasterPaymentsPaymentContext(
                 PaymentScheme.FasterPayments, 
                 NonExistentAccount, 
                 SmallAmount);
 
-            MakePaymentResult result = bacsPaymentValidator.IsPaymentAllowed(paymentContext);
+            MakePaymentResult result = fasterPaymentsPaymentValidator.IsPaymentAllowed(paymentContext);
 
             Assert.False(result.Success);
         }
@@ -100,6 +100,5 @@ namespace ClearBank.DeveloperTest.Tests.Validation
                 Account = account,
                 MakePaymentRequest = GetMakePaymentRequest(paymentScheme, amount)
             };
-
     }
 }

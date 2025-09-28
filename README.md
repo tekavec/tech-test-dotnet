@@ -16,6 +16,7 @@ After initial code observation, I found these problems with the code and potenti
 
 3. Domain specifics
   * Between the account creation, checking its balance and updating it, there's a chance its state can change - either in multi-threading system or database updates from another system. In a real application, I'd guard against such problems with one of the locking features (optimistic/pessimistic, or thread locking) or going with immutable event sourcing approach if response doesn't have to be quick. But I'm deliberately leaving this outside the scope of this exercise (time constraint, not having visibility of the whole system).
+  * `PaymentScheme` enumerator doesn't have assigned integer values to its members, which means it defaults to `FasterPayments`. This could be potentially dangerous as forgetting to set payment scheme in the payment request might go through the unexpected rail. However, I wouldn't change enumerator values if solution already went to production as it'd cause wrong resolution of stored payment scheme values.
 
 4. Project level:
   * Good separation of production code and tests on the project level.

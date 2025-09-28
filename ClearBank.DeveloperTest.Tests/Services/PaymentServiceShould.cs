@@ -10,25 +10,80 @@ namespace ClearBank.DeveloperTest.Tests.Services
         private const string NormalDataStoreType = "data-store";
 
         [Theory]
-        [InlineData(BackupDataStoreType, PaymentScheme.Bacs, 1)]
-        [InlineData(BackupDataStoreType, PaymentScheme.FasterPayments, 1)]
-        [InlineData(BackupDataStoreType, PaymentScheme.Chaps, 1)]
-        [InlineData(NormalDataStoreType, PaymentScheme.Bacs, 1)]
-        [InlineData(NormalDataStoreType, PaymentScheme.FasterPayments, 1)]
-        [InlineData(NormalDataStoreType, PaymentScheme.Chaps, 1)]
-        public void Not_Make_Successful_Payment_If_Account_Does_Not_Exist(
-            string dataStoreType,
+        [InlineData(PaymentScheme.Bacs, 1)]
+        [InlineData(PaymentScheme.FasterPayments, 1)]
+        [InlineData(PaymentScheme.Chaps, 1)]
+        public void Not_Make_Successful_Backup_Payment_If_Account_Does_Not_Exist(
             PaymentScheme paymentScheme,
             decimal amount)
         {
-            var paymentService = new TestablePaymentService { DataStoreType = "Backup", BackupAccountDataStore = new TestableBackupAccountDataStore { Account = null} };
-            var makePaymentRequest = new MakePaymentRequest { DebtorAccountNumber = "12345678", PaymentScheme = PaymentScheme.Bacs };
+            var makePaymentRequest = new MakePaymentRequest { DebtorAccountNumber = "12345678", PaymentScheme = paymentScheme, Amount = amount };
+            var paymentService = new TestablePaymentService 
+            { 
+                DataStoreType = BackupDataStoreType, 
+                BackupAccountDataStore = new TestableBackupAccountDataStore { Account = null} 
+            };
 
             var result = paymentService.MakePayment(makePaymentRequest);
 
             Assert.False(result.Success);
         }
 
+        [Theory]
+        [InlineData(PaymentScheme.Bacs, 1)]
+        [InlineData(PaymentScheme.FasterPayments, 1)]
+        [InlineData(PaymentScheme.Chaps, 1)]
+        public void Not_Make_Successful_Payment_If_Account_Does_Not_Exist(
+            PaymentScheme paymentScheme,
+            decimal amount)
+        {
+            var makePaymentRequest = new MakePaymentRequest { DebtorAccountNumber = "12345678", PaymentScheme = paymentScheme, Amount = amount };
+            var paymentService = new TestablePaymentService
+            {
+                DataStoreType = NormalDataStoreType,
+                AccountDataStore = new TestableAccountDataStore { Account = null }
+            };
+
+            var result = paymentService.MakePayment(makePaymentRequest);
+
+            Assert.False(result.Success);
+        }
+
+        [Theory]
+        [InlineData(BackupDataStoreType, AccountStatus.Live, 1, 100)]
+        [InlineData(BackupDataStoreType, AccountStatus.Live, 100, 1)]
+        [InlineData(BackupDataStoreType, AccountStatus.Disabled, 1, 100)]
+        [InlineData(BackupDataStoreType, AccountStatus.InboundPaymentsOnly, 100, 1)]
+        [InlineData(NormalDataStoreType, AccountStatus.Live, 1, 100)]
+        [InlineData(NormalDataStoreType, AccountStatus.Live, 100, 1)]
+        [InlineData(NormalDataStoreType, AccountStatus.Disabled, 1, 100)]
+        [InlineData(NormalDataStoreType, AccountStatus.InboundPaymentsOnly, 100, 1)]
+        public void Make_Successful_Payment_For_Bacs_And_Update_Account_Balance(
+            string dataStoreType,
+            AccountStatus status,
+            decimal amount,
+            decimal accountBalance)
+        {
+            Account account = GetAccount(AllowedPaymentSchemes.Bacs, accountBalance, status);
+            var makePaymentRequest = new MakePaymentRequest { PaymentScheme = PaymentScheme.Bacs, Amount = amount };
+            var paymentService = new TestablePaymentService
+            {
+                DataStoreType = dataStoreType,
+                BackupAccountDataStore = new TestableBackupAccountDataStore { Account = account },
+                AccountDataStore = new TestableAccountDataStore { Account = account }
+            };
+
+            var result = paymentService.MakePayment(makePaymentRequest);
+
+            Assert.True(result.Success);
+            Assert.True(account.Balance == accountBalance - amount);
+        }
+
+        private static Account GetAccount(
+            AllowedPaymentSchemes allowedPaymentSchemes,
+            decimal accountBalance,
+            AccountStatus status) =>
+                new Account { AllowedPaymentSchemes = allowedPaymentSchemes, Balance = accountBalance, Status = status };
     }
 
     public class TestablePaymentService : PaymentService

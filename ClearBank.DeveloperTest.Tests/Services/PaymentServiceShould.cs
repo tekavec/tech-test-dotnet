@@ -1,6 +1,7 @@
 ﻿using ClearBank.DeveloperTest.Data;
 using ClearBank.DeveloperTest.Services;
 using ClearBank.DeveloperTest.Types;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace ClearBank.DeveloperTest.Tests.Services
@@ -206,7 +207,7 @@ namespace ClearBank.DeveloperTest.Tests.Services
             Assert.True(account.Balance == accountBalance - amount);
         }
 
-        private static TestablePaymentService GetPaymentService(string dataStoreType, Account account)
+        private static PaymentService GetPaymentService(string dataStoreType, Account account)
         {
             var accountDataStore = new Mock<IAccountDataStore>();
             accountDataStore.Setup(a => a.GetAccount(SomeAccountNumber)).Returns(account);
@@ -214,10 +215,7 @@ namespace ClearBank.DeveloperTest.Tests.Services
             var accountDataStoreFactory = new Mock<IAccountDataStoreFactory>();
             accountDataStoreFactory.Setup(a => a.CreateDataStore(dataStoreType)).Returns(accountDataStore.Object);
 
-            return new TestablePaymentService(accountDataStoreFactory.Object)
-            {
-                DataStoreType = dataStoreType
-            };
+            return new PaymentService(accountDataStoreFactory.Object, GetDataStoreOptions(dataStoreType));
         }
 
         private static Account GetAccount(
@@ -233,19 +231,8 @@ namespace ClearBank.DeveloperTest.Tests.Services
                 PaymentScheme = paymentScheme,
                 Amount = amount
             };
-    }
 
-    public class TestablePaymentService : PaymentService
-    {
-        public TestablePaymentService(IAccountDataStoreFactory accountDataStoreFactory) : base(accountDataStoreFactory)
-        {
-        }
-
-        public string DataStoreType { get; set; }
-
-        public override string GetDataStoreType()
-        {
-            return this.DataStoreType;
-        }
+        private static IOptions<DataStoreOptions> GetDataStoreOptions(string dataStoreType) =>
+            (IOptions<DataStoreOptions>)Options.Create(new DataStoreOptions { DataStoreType = dataStoreType });
     }
 }

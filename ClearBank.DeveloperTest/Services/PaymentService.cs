@@ -1,5 +1,6 @@
 ﻿using ClearBank.DeveloperTest.Data;
 using ClearBank.DeveloperTest.Types;
+using Microsoft.Extensions.Options;
 using System;
 using System.Configuration;
 
@@ -8,21 +9,26 @@ namespace ClearBank.DeveloperTest.Services
     public class PaymentService : IPaymentService
     {
         private readonly IAccountDataStoreFactory accountDataStoreFactory;
+        private readonly string dataStoreType;
 
         [Obsolete]
         public PaymentService()
         {
             this.accountDataStoreFactory = new AccountDataStoreFactory();
+            this.dataStoreType = ConfigurationManager.AppSettings["DataStoreType"];
         }
 
-        public PaymentService(IAccountDataStoreFactory accountDataStoreFactory)
+        public PaymentService(
+            IAccountDataStoreFactory accountDataStoreFactory,
+            IOptions<DataStoreOptions> dataStoreOptions)
         {
             this.accountDataStoreFactory = accountDataStoreFactory;
+            this.dataStoreType = dataStoreOptions.Value.DataStoreType;
         }
 
         public MakePaymentResult MakePayment(MakePaymentRequest request)
         {
-            var dataStoreType = GetDataStoreType();
+            var dataStoreType = this.dataStoreType;
 
             Account account = null;
 
@@ -85,11 +91,6 @@ namespace ClearBank.DeveloperTest.Services
             }
 
             return result;
-        }
-
-        public virtual string GetDataStoreType()
-        {
-            return ConfigurationManager.AppSettings["DataStoreType"];
         }
     }
 }

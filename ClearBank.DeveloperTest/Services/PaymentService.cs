@@ -8,25 +8,25 @@ namespace ClearBank.DeveloperTest.Services
     {
         public MakePaymentResult MakePayment(MakePaymentRequest request)
         {
-            var dataStoreType = ConfigurationManager.AppSettings["DataStoreType"];
+            var dataStoreType = GetDataStoreType();
 
             Account account = null;
 
             if (dataStoreType == "Backup")
             {
-                var accountDataStore = new BackupAccountDataStore();
+                var accountDataStore = GetBackupAccountDataStore();
                 account = accountDataStore.GetAccount(request.DebtorAccountNumber);
             }
             else
             {
-                var accountDataStore = new AccountDataStore();
+                var accountDataStore = GetAccountDataStore();
                 account = accountDataStore.GetAccount(request.DebtorAccountNumber);
             }
 
             var result = new MakePaymentResult();
 
             result.Success = true;
-            
+
             switch (request.PaymentScheme)
             {
                 case PaymentScheme.Bacs:
@@ -88,6 +88,21 @@ namespace ClearBank.DeveloperTest.Services
             }
 
             return result;
+        }
+
+        public virtual AccountDataStore GetAccountDataStore()
+        {
+            return new AccountDataStore();
+        }
+
+        public virtual BackupAccountDataStore GetBackupAccountDataStore()
+        {
+            return new BackupAccountDataStore();
+        }
+
+        public virtual string GetDataStoreType()
+        {
+            return ConfigurationManager.AppSettings["DataStoreType"];
         }
     }
 }

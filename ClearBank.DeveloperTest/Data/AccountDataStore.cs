@@ -4,7 +4,7 @@ namespace ClearBank.DeveloperTest.Data
 {
     public class AccountDataStore
     {
-        public Account GetAccount(string accountNumber)
+        public virtual Account GetAccount(string accountNumber)
         {
             // Access database to retrieve account, code removed for brevity 
             return new Account();

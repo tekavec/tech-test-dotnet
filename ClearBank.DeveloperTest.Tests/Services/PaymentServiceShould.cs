@@ -77,7 +77,7 @@ namespace ClearBank.DeveloperTest.Tests.Services
         [InlineData(NormalDataStoreType, AccountStatus.Live, 1, 1)]
         [InlineData(NormalDataStoreType, AccountStatus.Disabled, 1, 1)]
         [InlineData(NormalDataStoreType, AccountStatus.InboundPaymentsOnly, 1, 1)]
-        public void Make_Successful_Payment_For_FasterPayments_And_Update_Account_Balance(
+        public void Make_Successful_Payment_For_FasterPayments_And_Update_Account_Balance_If_Account_Balance_Is_Adequate(
             string dataStoreType,
             AccountStatus status,
             decimal amount,
@@ -106,6 +106,48 @@ namespace ClearBank.DeveloperTest.Tests.Services
         {
             var account = GetAccount(AllowedPaymentSchemes.FasterPayments, accountBalance, status);
             var makePaymentRequest = GetMakePaymentRequest(amount, PaymentScheme.FasterPayments);
+            var paymentService = GetPaymentService(dataStoreType, account);
+
+            var result = paymentService.MakePayment(makePaymentRequest);
+
+            Assert.False(result.Success);
+            Assert.True(account.Balance == accountBalance);
+        }
+
+        [Theory]
+        [InlineData(BackupDataStoreType, AccountStatus.Live, 100, 1)]
+        [InlineData(BackupDataStoreType, AccountStatus.Live, 1, 100)]
+        [InlineData(NormalDataStoreType, AccountStatus.Live, 100, 1)]
+        [InlineData(NormalDataStoreType, AccountStatus.Live, 1, 100)]
+        public void Make_Successful_Payment_For_Chaps_And_Update_Account_Balance_If_Account_Is_Live(
+            string dataStoreType,
+            AccountStatus status,
+            decimal amount,
+            decimal accountBalance)
+        {
+            var account = GetAccount(AllowedPaymentSchemes.Chaps, accountBalance, status);
+            var makePaymentRequest = GetMakePaymentRequest(amount, PaymentScheme.Chaps);
+            var paymentService = GetPaymentService(dataStoreType, account);
+
+            var result = paymentService.MakePayment(makePaymentRequest);
+
+            Assert.True(result.Success);
+            Assert.True(account.Balance == accountBalance - amount);
+        }
+
+        [Theory]
+        [InlineData(BackupDataStoreType, AccountStatus.Disabled, 1, 100)]
+        [InlineData(BackupDataStoreType, AccountStatus.InboundPaymentsOnly, 1, 100)]
+        [InlineData(NormalDataStoreType, AccountStatus.Disabled, 1, 100)]
+        [InlineData(NormalDataStoreType, AccountStatus.InboundPaymentsOnly, 1, 100)]
+        public void Not_Make_Payment_For_Chaps_If_Account_Is_Not_Live(
+            string dataStoreType,
+            AccountStatus status,
+            decimal amount,
+            decimal accountBalance)
+        {
+            var account = GetAccount(AllowedPaymentSchemes.Chaps, accountBalance, status);
+            var makePaymentRequest = GetMakePaymentRequest(amount, PaymentScheme.Chaps);
             var paymentService = GetPaymentService(dataStoreType, account);
 
             var result = paymentService.MakePayment(makePaymentRequest);

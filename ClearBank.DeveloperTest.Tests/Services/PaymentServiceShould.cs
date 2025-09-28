@@ -156,6 +156,31 @@ namespace ClearBank.DeveloperTest.Tests.Services
             Assert.True(account.Balance == accountBalance);
         }
 
+        [Theory]
+        [InlineData(BackupDataStoreType, AllowedPaymentSchemes.Bacs, PaymentScheme.FasterPayments, AccountStatus.Live, 1, 100)]
+        [InlineData(BackupDataStoreType, AllowedPaymentSchemes.FasterPayments, PaymentScheme.Chaps, AccountStatus.Live, 1, 100)]
+        [InlineData(BackupDataStoreType, AllowedPaymentSchemes.Chaps, PaymentScheme.Bacs, AccountStatus.Live, 1, 100)]
+        [InlineData(NormalDataStoreType, AllowedPaymentSchemes.Bacs, PaymentScheme.FasterPayments, AccountStatus.Live, 1, 100)]
+        [InlineData(NormalDataStoreType, AllowedPaymentSchemes.FasterPayments, PaymentScheme.Chaps, AccountStatus.Live, 1, 100)]
+        [InlineData(NormalDataStoreType, AllowedPaymentSchemes.Chaps, PaymentScheme.Bacs, AccountStatus.Live, 1, 100)]
+        public void Not_Make_Payment_If_Requested_PaymentScheme_Is_Not_Allowed_By_Account(
+            string dataStoreType,
+            AllowedPaymentSchemes allowedPaymentSchemes,
+            PaymentScheme paymentScheme,
+            AccountStatus status,
+            decimal amount,
+            decimal accountBalance)
+        {
+            var account = GetAccount(allowedPaymentSchemes, accountBalance, status);
+            var makePaymentRequest = GetMakePaymentRequest(amount, paymentScheme);
+            var paymentService = GetPaymentService(dataStoreType, account);
+
+            var result = paymentService.MakePayment(makePaymentRequest);
+
+            Assert.False(result.Success);
+            Assert.True(account.Balance == accountBalance);
+        }
+
         private static TestablePaymentService GetPaymentService(string dataStoreType, Account account) => 
             new TestablePaymentService
             {

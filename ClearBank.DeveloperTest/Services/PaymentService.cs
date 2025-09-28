@@ -40,23 +40,29 @@ namespace ClearBank.DeveloperTest.Services
 
         public MakePaymentResult MakePayment(MakePaymentRequest request)
         {
-            var dataStoreType = this.dataStoreType;
+            var accountDataStore = accountDataStoreFactory.CreateDataStore(this.dataStoreType);
 
-            Account account = null;
+            var account = accountDataStore.GetAccount(request.DebtorAccountNumber);
 
-            var accountDataStore = this.accountDataStoreFactory.CreateDataStore(dataStoreType);
-            account = accountDataStore.GetAccount(request.DebtorAccountNumber);
+            var result = this.paymentValidator.IsPaymentAllowed(new PaymentContext(account, request));
 
-            var result = this.paymentValidator.IsPaymentAllowed(new PaymentContext (account, request));
-
-            if (result.Success)
-            {
-                account.Balance -= request.Amount;
-
-                accountDataStore.UpdateAccount(account);
-            }
+            UpdateAccountBalanceIfPaymentAllowed(request, accountDataStore, account, result);
 
             return result;
+        }
+
+        private static void UpdateAccountBalanceIfPaymentAllowed(
+            MakePaymentRequest request,
+            IAccountDataStore accountDataStore,
+            Account account,
+            MakePaymentResult result)
+        {
+
+            if (!result.Success)
+                return;
+
+            account.Balance -= request.Amount;
+            accountDataStore.UpdateAccount(account);
         }
     }
 }

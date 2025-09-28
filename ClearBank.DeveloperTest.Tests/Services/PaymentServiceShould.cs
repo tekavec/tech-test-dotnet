@@ -6,8 +6,20 @@ namespace ClearBank.DeveloperTest.Tests.Services
 {
     public class PaymentServiceShould
     {
-        [Fact]
-        public void Not_Make_Successful_Backup_Payment_If_Account_Does_Not_Exist()
+        private const string BackupDataStoreType = "Backup";
+        private const string NormalDataStoreType = "data-store";
+
+        [Theory]
+        [InlineData(BackupDataStoreType, PaymentScheme.Bacs, 1)]
+        [InlineData(BackupDataStoreType, PaymentScheme.FasterPayments, 1)]
+        [InlineData(BackupDataStoreType, PaymentScheme.Chaps, 1)]
+        [InlineData(NormalDataStoreType, PaymentScheme.Bacs, 1)]
+        [InlineData(NormalDataStoreType, PaymentScheme.FasterPayments, 1)]
+        [InlineData(NormalDataStoreType, PaymentScheme.Chaps, 1)]
+        public void Not_Make_Successful_Payment_If_Account_Does_Not_Exist(
+            string dataStoreType,
+            PaymentScheme paymentScheme,
+            decimal amount)
         {
             var paymentService = new TestablePaymentService { DataStoreType = "Backup", BackupAccountDataStore = new TestableBackupAccountDataStore { Account = null} };
             var makePaymentRequest = new MakePaymentRequest { DebtorAccountNumber = "12345678", PaymentScheme = PaymentScheme.Bacs };
@@ -17,16 +29,6 @@ namespace ClearBank.DeveloperTest.Tests.Services
             Assert.False(result.Success);
         }
 
-        [Fact]
-        public void Not_Make_Successful_Payment_If_Account_Does_Not_Exist()
-        {
-            var paymentService = new TestablePaymentService { DataStoreType = "non-Backup", AccountDataStore = new TestableAccountDataStore { Account = null} };
-            var makePaymentRequest = new MakePaymentRequest { DebtorAccountNumber = "12345678", PaymentScheme = PaymentScheme.Bacs };
-
-            var result = paymentService.MakePayment(makePaymentRequest);
-
-            Assert.False(result.Success);
-        }
     }
 
     public class TestablePaymentService : PaymentService

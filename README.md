@@ -36,6 +36,7 @@ Initially, I'll have to unit test an inherited implementation of the `PaymentSer
 I'll be using code coverage tool NCrunch (https://ncrunch.net/), which shows live code coverage and test success. This will both speed up code coverage but it also makes easier to understand whether I covered all execution paths.
 
 I'll use xunit and Moq libraries in my test project. I expect to have a mix of 'Fact' unit tests and 'Theory' unit tests for permutations or edge cases when this will be beneficial to reduce the number of unit tests.
+Unit test implementation will generally be split in 3 sections - Arrange, Act, and Assert. I don't write comments above each section, they are split by an empty line only.
 
 **Note:** I will deliberately break the convention on C# method naming for unit test methods - adding underscore between words for better readability. I prefer to have unit tests write in a way that class name + method name can be read as sentences, for example: "Payment service should not update an account if account not found" translates to "PaymentServiceShould" (class name) and "Not Update_Account_If_Account_Not_Found" (method name).
 

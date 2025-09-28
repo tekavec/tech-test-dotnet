@@ -181,6 +181,30 @@ namespace ClearBank.DeveloperTest.Tests.Services
             Assert.True(account.Balance == accountBalance);
         }
 
+        [Theory]
+        [InlineData(BackupDataStoreType, AllowedPaymentSchemes.Bacs | AllowedPaymentSchemes.FasterPayments, PaymentScheme.Bacs, AccountStatus.Live, 1, 100)]
+        [InlineData(BackupDataStoreType, AllowedPaymentSchemes.Bacs | AllowedPaymentSchemes.FasterPayments, PaymentScheme.FasterPayments, AccountStatus.Live, 1, 100)]
+        [InlineData(BackupDataStoreType, AllowedPaymentSchemes.Bacs | AllowedPaymentSchemes.FasterPayments | AllowedPaymentSchemes.Chaps, PaymentScheme.Bacs, AccountStatus.Live, 1, 100)]
+        [InlineData(BackupDataStoreType, AllowedPaymentSchemes.Bacs | AllowedPaymentSchemes.FasterPayments | AllowedPaymentSchemes.Chaps, PaymentScheme.FasterPayments, AccountStatus.Live, 1, 100)]
+        [InlineData(BackupDataStoreType, AllowedPaymentSchemes.Bacs | AllowedPaymentSchemes.FasterPayments | AllowedPaymentSchemes.Chaps, PaymentScheme.Chaps, AccountStatus.Live, 1, 100)]
+        public void Make_Successful_Payment_If_Account_Has_Correct_Combination_Of_AllowedPaymentSchemes(
+            string dataStoreType,
+            AllowedPaymentSchemes allowedPaymentSchemes,
+            PaymentScheme paymentScheme,
+            AccountStatus status,
+            decimal amount,
+            decimal accountBalance)
+        {
+            var account = GetAccount(allowedPaymentSchemes, accountBalance, status);
+            var makePaymentRequest = GetMakePaymentRequest(amount, paymentScheme);
+            var paymentService = GetPaymentService(dataStoreType, account);
+
+            var result = paymentService.MakePayment(makePaymentRequest);
+
+            Assert.True(result.Success);
+            Assert.True(account.Balance == accountBalance - amount);
+        }
+
         private static TestablePaymentService GetPaymentService(string dataStoreType, Account account) => 
             new TestablePaymentService
             {
